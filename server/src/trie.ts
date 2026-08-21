@@ -40,3 +40,5 @@ export class Trie {
     return out
   }
 }
+
+export const trie = new Trie()

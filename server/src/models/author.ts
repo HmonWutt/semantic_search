@@ -7,5 +7,15 @@ const schema = new mongoose.Schema({
   nationality: { type: String, default: 'Unknown' },
 })
 
+schema.statics.findByNameCaseInsensitive = function (name: string) {
+  const lower = name.toLowerCase()
+  return this.find({}).lean().then((docs: AuthorT[]) =>
+    docs.find((d) => d.name.toLowerCase() === lower) ?? null
+  )
+}
+
 export type AuthorT = InferSchemaType<typeof schema> & { _id: mongoose.Types.ObjectId }
-export const Author = mongoose.model('Author', schema)
+export interface AuthorModel extends mongoose.Model<AuthorT> {
+  findByNameCaseInsensitive(name: string): Promise<AuthorT | null>
+}
+export const Author = mongoose.model<AuthorT, AuthorModel>('Author', schema)
