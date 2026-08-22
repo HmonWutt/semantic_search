@@ -4,13 +4,12 @@ import { Author } from '../models/author.js'
 import { Tag } from '../models/tag.js'
 import { createQuoteSchema, updateQuoteSchema } from '../validation.js'
 import { embed, cosine } from '../embed.js'
-import { asyncHandler } from '../middleware/async.js'
 import { ApiError } from '../middleware/error.js'
 import { trie } from '../trie.js'
 
 
 /** GET /api/quotes?author=<id>&tag=<id> - list, optional filters, author + tags joined. */
-export const listQuotes = asyncHandler(async (req: Request, res: Response) => {
+export const listQuotes = (async (req: Request, res: Response) => {
   const filter: Record<string, unknown> = {}
   if (typeof req.query.author === 'string') filter.authorId = req.query.author
   if (typeof req.query.tag === 'string') filter.tagIds = req.query.tag
@@ -19,14 +18,14 @@ export const listQuotes = asyncHandler(async (req: Request, res: Response) => {
 })
 
 /** GET /api/quotes/:id */
-export const getQuote = asyncHandler(async (req: Request, res: Response) => {
+export const getQuote = (async (req: Request, res: Response) => {
   const q = await Quote.findById(req.params.id).populate('authorId tagIds').lean()
   if (!q) throw new ApiError(404, 'Quote not found')
   res.json(q)
 })
 
 /** POST /api/quotes - create; embeds the text so semantic search includes it. */
-export const createQuote = asyncHandler(async (req: Request, res: Response) => {
+export const createQuote = (async (req: Request, res: Response) => {
   const parsed = createQuoteSchema.parse(req.body)
   // Referential integrity: authorId must point at a real author.
   if (!(await Author.exists({ _id: parsed.authorId }))) {
@@ -46,7 +45,7 @@ export const createQuote = asyncHandler(async (req: Request, res: Response) => {
 })
 
 /** PUT /api/quotes/:id - update; re-embeds if text changed. */
-export const updateQuote = asyncHandler(async (req: Request, res: Response) => {
+export const updateQuote = (async (req: Request, res: Response) => {
   const parsed = updateQuoteSchema.parse(req.body)
   const existing = await Quote.findById(req.params.id)
   if (!existing) throw new ApiError(404, 'Quote not found')
@@ -70,14 +69,14 @@ export const updateQuote = asyncHandler(async (req: Request, res: Response) => {
 })
 
 /** DELETE /api/quotes/:id */
-export const deleteQuote = asyncHandler(async (req: Request, res: Response) => {
+export const deleteQuote = (async (req: Request, res: Response) => {
   const deleted = await Quote.findByIdAndDelete(req.params.id)
   if (!deleted) throw new ApiError(404, 'Quote not found')
   res.json({ deleted: true, id: req.params.id })
 })
 
-/** GET /api/search?q=... - semantic search: embed query, cosine vs all quote vectors, top-5. */
-export const searchQuotes = asyncHandler(async (req: Request, res: Response) => {
+/** GET /api/quotes/search?q=... - semantic search: embed query, cosine vs all quote vectors, top-5. */
+export const searchQuotes = (async (req: Request, res: Response) => {
   const q = String(req.query.q ?? '').trim()
   if (!q) return res.json([])
   const [qv] = await embed([q])
@@ -92,12 +91,12 @@ export const searchQuotes = asyncHandler(async (req: Request, res: Response) => 
       score: cosine(d.vector ?? [], qv),
     }))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 5)
+    .slice(0, 3)
   res.json(scored)
 })
 
-/** GET /api/suggest?prefix=... - trie prefix autocomplete over quote texts. */
-export const suggestQuotes = asyncHandler(async (req: Request, res: Response) => {
+/** GET /api/quotes/suggest?prefix=... - trie prefix autocomplete over quote texts. */
+export const suggestQuotes = (async (req: Request, res: Response) => {
   res.json(trie.suggest(String(req.query.prefix ?? '').trim(), 8))
 })
 
