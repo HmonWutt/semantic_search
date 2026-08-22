@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import SearchBar from './components/SearchBar'
 
 export default function App() {
   interface Test {
@@ -8,9 +9,7 @@ export default function App() {
   const [author, setAuthor] = useState<Test>({ name: "Some author" })
   return (
     <main>
-      <header>
-        <h1>{author.name}</h1>
-      </header>
+      <SearchBar />
     </main>
   )
 }
