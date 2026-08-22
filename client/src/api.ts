@@ -30,4 +30,5 @@ export const deleteQuote = async (id: string) => { await json<{ deleted: boolean
 // ---- Authors & tags (for the form) ----
 export const listAuthors = () => json<Author[]>(`${baseURL}/authors`)
 export const listTags = () => json<Tag[]>(`${baseURL}/tags`)
+export const seedDb = () => json<{ inserted: { authors: number; tags: number; quotes: number }; dims: number }>(`${baseURL}/seed`, { method: 'POST' })
 
